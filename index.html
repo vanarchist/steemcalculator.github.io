@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Steemit Vote Weight Calculator</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
+</head>
+
+<body>
+    <script type="text/javascript" src="steem.min.js"></script>
+
+    <script type="text/javascript">
+        function numberFormat(a) {
+            var b, c = a.toString().split(" "),
+                d = c[0];
+            return void 0 !== d ? (b = Math.abs(d),
+                b >= Math.pow(10, 15) ? d = (d / Math.pow(10, 15)).toFixed(1) + "q" : b < Math.pow(10, 15) && b >= Math.pow(10, 12) ? d = (d / Math.pow(10, 12)).toFixed(1) + "t" : b < Math.pow(10, 12) && b >= Math.pow(10, 9) ? d = (d / Math.pow(10, 9)).toFixed(1) + "b" : b < Math.pow(10, 9) && b >= Math.pow(10, 6) ? d = (d / Math.pow(10, 6)).toFixed(1) + "m" : b < Math.pow(10, 6) && b >= Math.pow(10, 3) && (d = (d / Math.pow(10, 3)).toFixed(1) + "k"),
+                d) : void 0
+        }
+
+        function calculate() {
+            $("#requiredfieldsalert").hide();
+            $("#usernotfoundalert").hide();
+            $("#postnotfoundalert").hide();
+            $("#results").hide();
+            $("#postresults").hide();
+            $("#earlypost").hide();
+            var username = $("#username").val();
+            if (username.startsWith("@")) {
+              username = username.substring(1);
+            }
+            var posturl = $("#posturl").val();
+            if (posturl.startsWith("http")) {
+              posturl = posturl.match(/\/\/[^\/]+\/([^\.]+)/)[1];
+            }
+            if (!$.trim(username).length || !$.trim(posturl).length) {
+                $("#requiredfieldsalert").show();
+                return;
+            }
+
+            var server = 'wss://steemit.com/wspa';
+            var ws = new WebSocketWrapper(server);
+            ws.connect().then(function(response) {
+                var steem = new SteemWrapper(ws);
+                steem.send('call', [0, "get_accounts", [
+                    [username]
+                ]], function(response) {
+                    if (!response || response.length == 0) {
+                        $("#usernotfoundalert").show();
+                        return;
+                    }
+                    $("#results").show();
+                    var voting_power = Number(response[0].voting_power);
+                    var vesting_shares = Number(response[0].vesting_shares.replace(" VESTS", "").replace(".", ""));
+                    var voting_percent = 10000;
+                    var used_power = (voting_power * voting_percent) / 10000;
+                    used_power = (used_power / 200) + 1;
+                    var vote_rshares = (used_power * vesting_shares) / 10000;
+                    $("#vote_rshares").val(numberFormat(vote_rshares));
+                    steem.send('call', [0, "get_state", [posturl]], function(response) {
+                        if (!response) {
+                            $("#postnotfoundalert").show();
+                            return;
+                        }
+                        var time = new Date(response.props.time);
+                        var dict = response.content;
+                        var net_rshares;
+                        var created;
+                        var total_vote_weight;
+                        for (content in dict) {
+                            if (dict[content].depth == 0) {
+                                net_rshares = Number(dict[content].net_rshares);
+                                created = new Date(dict[content].created);
+                                total_vote_weight = Number(dict[content].total_vote_weight);
+                                break;
+                            }
+                        }
+                        if (!net_rshares) {
+                            $("#postnotfoundalert").show();
+                            return;
+                        }
+                        $("#postresults").show();
+                        var post_rshares = net_rshares + vote_rshares;
+                        var post_age = (time - created) / 1000;
+                        var max_uint64 = 18446744073709551615;
+                        var thirty_minutes = 30 * 60;
+                        var content_constant = 2000000000000;
+                        var old_weight = (max_uint64 * net_rshares) / (2 * content_constant + net_rshares);
+                        var new_weight = (max_uint64 * post_rshares) / (2 * content_constant + post_rshares);
+                        var vote_weight = new_weight - old_weight;
+                        //$( "#total_vote_weight" ).val(numberFormat(total_vote_weight));
+                        $("#vote_weight").val(numberFormat(vote_weight));
+                        var new_total_weight = total_vote_weight + vote_weight;
+                        var vote_percent = (100 * vote_weight) / (new_total_weight);
+                        $("#vote_percent").val(numeral(vote_percent / 100).format('00.000%'));
+
+                        var delta_t = Math.min(thirty_minutes, post_age);
+                        if (delta_t < thirty_minutes) {
+                            $("#earlypost").show();
+                            var adj_weight = (vote_weight * delta_t) / (thirty_minutes);
+                            $("#adj_weight").val(numberFormat(adj_weight));
+                            var adj_vote_percent = (100 * adj_weight) / (total_vote_weight + adj_weight);
+                            $("#penalty_value").text(numeral(1 - (delta_t / thirty_minutes)).format('00.0%'));
+                            $("#adj_vote_percent").val(numeral(adj_vote_percent / 100).format('00.000%'));
+                        }
+                    });
+
+                });
+            });
+        }
+    </script>
+    <div class="container">
+        <div class="row">
+            <form id="votecalculation" class="form-horizontal" action="javascript:calculate();">
+                <fieldset>
+
+                    <!-- Form Name -->
+                    <legend>Steemit Vote Weight Calculator</legend>
+
+                    <div id="requiredfieldsalert" class="alert alert-danger collapse">
+                        Username and URL are required!
+                    </div>
+                    <div id="usernotfoundalert" class="alert alert-danger collapse">
+                        User not found!
+                    </div>
+                    <div id="postnotfoundalert" class="alert alert-danger collapse">
+                        Post not found!
+                    </div>
+
+                    <!-- Text input-->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="username">Username</label>
+                        <div class="col-md-2">
+                            <input id="username" type="text" placeholder="burnin" class="form-control input-md">
+
+                        </div>
+                    </div>
+
+                    <!-- Text input-->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="posturl">Post URL</label>
+                        <div class="col-md-4">
+                            <input id="posturl" type="text" placeholder="https://steemit.com/fiction/@burnin/steemit-s-free-online-sci-fi-compendium-vol-1" class="form-control input-md">
+
+                        </div>
+                    </div>
+
+                    <!-- Button -->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="singlebutton"></label>
+                        <div class="col-md-4">
+                            <button id="calculatebutton" class="btn btn-primary">Calculate</button>
+                        </div>
+                    </div>
+
+
+                    <div id="results" class="collapse">
+                        <!-- Text input-->
+                        <div class="form-group">
+                            <label class="col-md-4 control-label" for="vote_rshares">Reward Shares</label>
+                            <div class="col-md-2">
+                                <input id="vote_rshares" type="text" class="form-control input-md">
+
+                            </div>
+                        </div>
+
+                        <div id="postresults" class="collapse">
+                            <!-- Text input-->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="vote_weight">Vote Weight</label>
+                                <div class="col-md-2">
+                                    <input id="vote_weight" type="text" class="form-control input-md">
+
+                                </div>
+                            </div>
+
+                            <!-- Text input-->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="vote_percent">Vote Percent</label>
+                                <div class="col-md-2">
+                                    <input id="vote_percent" type="text" class="form-control input-md">
+
+                                </div>
+                            </div>
+                            <div id="earlypost" class="collapse">
+                                <div id="earlypostalert" class="alert alert-warning ">
+                                    <span class="help-block">This post is not 30 minutes old yet. You are taking a penalty of <span id="penalty_value">X</span> on the voting weight.</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-4 control-label" for="adj_weight">Adjusted Weight</label>
+                                    <div class="col-md-2">
+                                        <input id="adj_weight" type="text" class="form-control input-md">
+
+                                    </div>
+                                </div>
+                                <!-- Text input-->
+                                <div class="form-group">
+                                    <label class="col-md-4 control-label" for="adj_vote_percent">Ajusted Vote Percent</label>
+                                    <div class="col-md-2">
+                                        <input id="adj_vote_percent" type="text" class="form-control input-md">
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+
+</body>
+
+</html>
