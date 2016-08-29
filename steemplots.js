@@ -23,12 +23,12 @@ function getSteemPlotter(calculator, callback) {
         };
 
         var layout = {
-            title: 'Curation Rewards when different users vote on this post (current payout of $' + calculator.calculatePostPayout(current_shares) + ')',
+            title: 'Minimum Curation Reward when different users vote on this post (current payout of $' + calculator.calculatePostPayout(current_shares) + ')',
             xaxis: {
-                title: 'SP'
+                title: 'STEEM Power of the Voter'
             },
             yaxis: {
-                title: '$',
+                title: 'Minimum Curation Reward',
                 tickprefix: '$'
             }
         };
@@ -54,7 +54,7 @@ function getSteemPlotter(calculator, callback) {
             name: 'Curation Reward'
         };
         var layout = {
-            title: 'Curation Rewards',
+          title: 'Potential Curation Rewards based on the final SBD value of the post',
             xaxis: {
                 title: 'Final Post Value',
                 tickprefix: '$'
@@ -117,10 +117,11 @@ function getSteemPlotter(calculator, callback) {
         var layout = {
             title: 'Curation Reward when voting with ' + calculator.vestsToSP(current_vests) + 'SP',
             xaxis: {
-                title: 'Post Value When Voting ($)'
+                title: 'Post Value When Voting',
+                tickprefix: '$'
             },
             yaxis: {
-                title: 'Curation Reward ($)',
+                title: 'Curation Reward',
                 tickprefix: '$'
             },
         };

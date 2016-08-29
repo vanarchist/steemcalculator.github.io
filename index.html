@@ -95,12 +95,12 @@
 
                           plotter.plotRewardsByTargetReward(vote_weight, post.net_rshares + vote_rshares, end_shares, 'rewardplot');
                           var start_vests = calculator.SPtoVests(30);
-                          var end_vests =calculator.SPtoVests(2000);
+                          var end_vests =calculator.SPtoVests(20000);
 
                           plotter.plotRewardsBySP(start_vests, end_vests, post.net_rshares, 'plots');
 
                           var start_shares = calculator.SBDtoShares(0.10);
-                          var end_shares = calculator.SBDtoShares(3000);
+                          var end_shares = calculator.SBDtoShares(500);
 
                           var target_shares1 = calculator.SBDtoShares(100);
                           var target_shares2 = calculator.SBDtoShares(2000);
