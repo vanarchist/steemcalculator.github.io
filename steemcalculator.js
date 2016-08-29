@@ -1,0 +1,132 @@
+function getCalculator(callback) {
+    var calculator = {};
+    const content_constant = 2000000000000;
+
+    calculator.vestsToSP = function(vests) {
+      return Number(((this.total_vest_steem * (vests / this.total_vests))/1000).toFixed(3));
+    }
+
+    calculator.SPtoVests = function(SP) {
+      return Number((((SP * 1000) / this.total_vest_steem) * this.total_vests).toFixed(3))
+    }
+
+    calculator.calculateVoteRewardShares = function(voting_power, voting_percent, vesting_shares) {
+      var used_power = (voting_power * voting_percent) / 10000;
+      used_power = (used_power / 200) + 1;
+      return (used_power * vesting_shares) / 10000;
+    }
+
+    calculator.calculateWeight = function(shares) {
+      var max_uint64 = 18446744073709551615;
+
+      return (max_uint64 * shares) / (2 * content_constant + shares);
+    }
+
+    calculator.calculateVoteWeight = function(net_rshares, post_rshares) {
+      return this.calculateWeight(post_rshares) - this.calculateWeight(net_rshares);
+    }
+
+    calculator.calculateVShares = function(rshares) {
+       return ( rshares + content_constant ) * ( rshares + content_constant ) - content_constant * content_constant;
+    }
+
+    calculator.calculatePostPayout = function(rshares, post_reward_weight = 10000) {
+        var rs2 = this.calculateVShares( rshares )
+        rs2 = ( rs2 * post_reward_weight ) / 10000;
+
+        payout = ( this.total_reward_fund_steem * rs2 ) / this.total_reward_shares2;
+
+        sbd_payout_value = this.toSBD( payout );
+
+        return sbd_payout_value;
+    }
+
+    calculator.calculateVotePayout = function(post_payout, vote_weight, post_reward_weight) {
+      const curation_rewards_percent = 25 / 100;
+
+      var curation_rewards = post_payout * curation_rewards_percent;
+      return Number(((curation_rewards * vote_weight ) / post_reward_weight).toFixed(3));
+    }
+
+    calculator.calculateVotePercentage = function (vote_weight, total_shares)  {
+        return  Number(((100 * vote_weight) / calculator.calculateWeight(total_shares)).toFixed(3));
+    }
+
+    calculator.calculateVotePercentageWithWeight = function (vote_weight, post_vote_weight)  {
+        return  Number(((100 * vote_weight) / post_vote_weight));
+    }
+
+    calculator.calculatePenaltyValue = function(post_created, current_time) {
+        const thirty_minutes = 30 * 60;
+        var post_age = (current_time - post_created) / 1000;
+        var delta_t = Math.min(thirty_minutes, post_age);
+        return delta_t / thirty_minutes;
+    }
+
+    calculator.calculateAjustedPenaltyWeight = function(vote_weight, penalty_value) {
+        return vote_weight * penalty_value;
+    }
+
+    calculator.toSBD = function(steem) {
+        return Number((steem * calculator.current_median_history).toFixed(3));
+    }
+
+    calculator.SBDtoShares = function(sbd) {
+      var payout = sbd / calculator.current_median_history;
+      var rs2 = (this.total_reward_shares2 * payout) / this.total_reward_fund_steem;
+
+      var rshares = Math.sqrt(content_constant * content_constant + rs2) - content_constant;
+
+      return rshares;
+    }
+
+    calculator.loadUser = function(username, callback, callback_error) {
+        steem.send('call', [0, "get_accounts", [[username]]], function(response) {
+            var user = {};
+            user.voting_power = Number(response[0].voting_power);
+            user.vesting_shares = Number(response[0].vesting_shares.replace(" VESTS", "").replace(".", ""));
+            callback(user);
+        });
+    }
+
+    calculator.loadPost = function(posturl, callback, callback_error) {
+      steem.send('call', [0, "get_state", [posturl]], function(response) {
+          var post = {};
+          post.time = new Date(response.props.time);
+          var dict = response.content;
+          for (content in dict) {
+              if (dict[content].depth == 0) {
+                  post.net_rshares = Number(dict[content].net_rshares);
+                  post.created = new Date(dict[content].created);
+                  post.total_vote_weight = Number(dict[content].total_vote_weight);
+                  post.reward_weight = Number(dict[content].reward_weight);
+                  break;
+              }
+          }
+          if (post.net_rshares) {
+              callback(post);
+          } else {
+              callback_error();
+          }
+      });
+    }
+
+
+    var server = 'wss://steemit.com/wspa';
+    var ws = new WebSocketWrapper(server);
+    var steem;
+    ws.connect().then(function(response) {
+        steem = new SteemWrapper(ws);
+        steem.send('call', [0, "get_dynamic_global_properties", [[]]], function(response) {
+
+          calculator.total_vests = Number(response.total_vesting_shares.replace(" VESTS", "").replace(".", ""));
+          calculator.total_vest_steem = Number(response.total_vesting_fund_steem.replace(" STEEM", "").replace(".", ""));
+          calculator.total_reward_fund_steem = Number(response.total_reward_fund_steem.replace(" STEEM", ""));
+          calculator.total_reward_shares2 = Number(response.total_reward_shares2);
+          steem.send('call', [0, "get_feed_history", [[]]], function(response) {
+              calculator.current_median_history = Number(response.current_median_history.base.replace(" SBD", ""));
+              return callback(calculator);
+          });
+        });
+    });
+}
