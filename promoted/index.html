@@ -35,6 +35,7 @@
             transfers.forEach(function(transfer) {
               var newdiv = $('#template').clone().prop('id', 'new');
               newdiv.removeClass('collapse');
+              newdiv.addClass('new');
               newdiv.find(".from").text(transfer.from);
               newdiv.find(".to").text(transfer.to);
               newdiv.find(".amount").text(transfer.amount);
@@ -49,8 +50,8 @@
                 $('#main').prepend(newdiv);
               });
             });
-            while ($('#main').children().length > 10) {
-              var last_child = $('#main').children().last();
+            while ($('#main').children('.new').length > 10) {
+              var last_child = $('#main').children('.new').last();
               last_child.find(".timestamp").livestamp('destroy');
               last_child.find(".age").livestamp('destroy');
               last_child.remove();
