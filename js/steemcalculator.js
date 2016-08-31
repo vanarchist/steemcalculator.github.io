@@ -111,6 +111,66 @@ function getCalculator(callback) {
       });
     }
 
+    calculator.loadContent = function(username, permlink, callback) {
+      steem.send('call', [0, "get_content", [username, permlink]], function(response) {
+          var content = {};
+
+          content.url = 'https://steemit.com' + response.url;
+          content.title = response.root_title;
+          content.pending_payout_value = response.pending_payout_value;
+          content.net_votes = response.net_votes;
+          content.children = response.children;
+          content.created = response.created;
+
+          callback(content);
+      });
+    }
+
+    function parseTransfer(t, transfer) {
+      t.timestamp = transfer.timestamp;
+      t.from = transfer.op[1].from;
+      var to_split = transfer.op[1].memo.split('/');
+      t.to = to_split[0].substring(1);
+      t.permlink = to_split[1];
+      t.amount =  transfer.op[1].amount;
+      t.memo = transfer.op[1].memo;
+    }
+
+    var last_transfer;
+    var last_username;
+    calculator.loadTransfers = function(username, callback) {
+      last_username = username;
+      steem.send('call', [0, "get_account_history", [username, -1, 5]], function(response) {
+          var transfers = [];
+          for (idx in response) {
+            var transfer = response[idx][1];
+            if (transfer.op[0] == 'transfer') {
+              var t = {};
+              parseTransfer(t, transfer);
+              last_transfer = response[idx][0];
+              transfers.push(t);
+            }
+          }
+          callback(transfers);
+      });
+    }
+
+    calculator.loadNextTransfers = function(callback) {
+      steem.send('call', [0, "get_account_history", [last_username, last_transfer + 5, 5]], function(response) {
+          var transfers = [];
+          for (idx in response) {
+            var transfer = response[idx][1];
+            if (transfer.op[0] == 'transfer' && response[idx][0] > last_transfer) {
+              var t = {};
+              parseTransfer(t, transfer);
+              last_transfer = response[idx][0];
+              transfers.push(t);
+            }
+          }
+          callback(transfers);
+      });
+    }
+
 
     var server = 'wss://steemit.com/wspa';
     var ws = new WebSocketWrapper(server);

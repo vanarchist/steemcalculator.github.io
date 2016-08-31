@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Steemit Promoted Posts Ticker</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
+    <script type="text/javascript" src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.14.1/moment.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/livestamp/1.1.2/livestamp.min.js"></script>
+
+    <link rel="stylesheet" href="/css/animate.min.css">
+    <style media="screen" type="text/css">
+
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript" src="/js/steem.min.js"></script>
+    <script type="text/javascript" src="/js/steemcalculator.js"></script>
+    <script type="text/javascript" src="/js/steemplots.js"></script>
+
+    <script type="text/javascript">
+          function loadNextTransfers(calculator) {
+            calculator.loadNextTransfers(function(transfers) {
+              handleTransfers(calculator, transfers);
+            });
+          }
+          function handleTransfers(calculator, transfers) {
+            transfers.forEach(function(transfer) {
+              var newdiv = $('#template').clone().prop('id', 'new');
+              newdiv.removeClass('collapse');
+              newdiv.find(".from").text(transfer.from);
+              newdiv.find(".to").text(transfer.to);
+              newdiv.find(".amount").text(transfer.amount);
+              newdiv.find(".timestamp").livestamp(transfer.timestamp + 'Z');
+              calculator.loadContent(transfer.to, transfer.permlink, function(post) {
+                newdiv.find(".posturl").attr('href', post.url);
+                newdiv.find(".title").text(post.title);
+                newdiv.find(".postpayout").text(post.pending_payout_value);
+                newdiv.find(".votes").text(post.net_votes);
+                newdiv.find(".age").livestamp(post.created + 'Z');
+                newdiv.find(".comments").text(post.children);
+                $('#main').prepend(newdiv);
+              });
+            });
+            while ($('#main').children().length > 10) {
+              var last_child = $('#main').children().last();
+              last_child.find(".timestamp").livestamp('destroy');
+              last_child.find(".age").livestamp('destroy');
+              last_child.remove();
+            }
+            setTimeout(function() { loadNextTransfers(calculator) }, 10000);
+          }
+
+          $(function() {
+            getCalculator(function(calculator) {
+              calculator.loadTransfers('null' , function(transfers) {
+                handleTransfers(calculator, transfers);
+              });
+            });
+          });
+    </script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-82996957-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+
+    <div class="container">
+      <div class="page-header col-lg-10">
+        <ul class="nav nav-tabs">
+          <li role="presentation">
+            <a href="/">Steemit Vote Weight Calculator</a>
+          </li>
+          <li class="active" role="presentation">
+            <a href="/promoted">Latest Steemit Promoted Posts</a>
+          </li>
+        </ul>
+      </div>
+      <div class="row">
+        <div class="col-lg-10" id="main">
+          <div class="panel panel-primary animated zoomInDown collapse" id="template">
+            <div class="panel-heading">
+              (<span class="timestamp">placeholder</span>) <strong>@<span class='from'>placeholder</span></strong> promoted <strong>@<span class='to'>placeholder</span></strong>'s post with <strong>$<span class='amount'>placeholder</span></strong>
+            </div>
+            <div class="panel-body">
+              <div>
+                <div>
+                  <h4><a class='posturl' href="placeholder"><span class="title">placeholder<span></a></h4>
+                </div>
+                <div>
+                  <span class="label lb-lg label-success">$<span class="postpayout">placeholder</span></span>
+                  <span class="label label-primary"><span class="votes">placeholder</span> Votes</span>
+                  <span class="label label-info"><span class="comments">placeholder</span> Comments</span>
+                  <span class="label label-default">Posted <span class="age">placeholder</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</body>
+
+</html>

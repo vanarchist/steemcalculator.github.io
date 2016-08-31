@@ -15,9 +15,9 @@
 </head>
 
 <body>
-    <script type="text/javascript" src="steem.min.js"></script>
-    <script type="text/javascript" src="steemcalculator.js"></script>
-    <script type="text/javascript" src="steemplots.js"></script>
+    <script type="text/javascript" src="/js/steem.min.js"></script>
+    <script type="text/javascript" src="/js/steemcalculator.js"></script>
+    <script type="text/javascript" src="/js/steemplots.js"></script>
 
     <script type="text/javascript">
         function numberFormat(a) {
@@ -129,109 +129,98 @@
       ga('create', 'UA-82996957-1', 'auto');
       ga('send', 'pageview');
     </script>
+
     <div class="container">
-        <div class="row">
-            <form id="votecalculation" class="form-horizontal" action="javascript:calculate();">
-                <fieldset>
-
-                    <!-- Form Name -->
-                    <legend>Steemit Vote Weight Calculator</legend>
-
-                    <div id="requiredfieldsalert" class="alert alert-danger collapse">
-                        Username and URL are required!
+      <div class="page-header col-lg-10">
+        <ul class="nav nav-tabs">
+          <li class="active" role="presentation">
+            <a href="/">Steemit Vote Weight Calculator</a>
+          </li>
+          <li role="presentation">
+            <a href="/promoted">Latest Steemit Promoted Posts</a>
+          </li>
+        </ul>
+      </div>
+      <div class="row">
+        <div class="col-lg-10">
+          <form action="javascript:calculate();" class="form-horizontal" id="votecalculation" name="votecalculation">
+            <fieldset>
+              <div class="alert alert-danger collapse" id="requiredfieldsalert">
+                Username and URL are required!
+              </div>
+              <div class="alert alert-danger collapse" id="usernotfoundalert">
+                User not found!
+              </div>
+              <div class="alert alert-danger collapse" id="postnotfoundalert">
+                Post not found!
+              </div><!-- Text input-->
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="username">Username</label>
+                <div class="col-md-2">
+                  <input class="form-control input-md" id="username" placeholder="burnin" type="text">
+                </div>
+              </div><!-- Text input-->
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="posturl">Post URL</label>
+                <div class="col-md-4">
+                  <input class="form-control input-md" id="posturl" placeholder="https://steemit.com/fiction/@burnin/steemit-s-free-online-sci-fi-compendium-vol-1" type="text">
+                </div>
+              </div><!-- Button -->
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="singlebutton"></label>
+                <div class="col-md-1">
+                  <button class="btn btn-primary" id="calculatebutton">Calculate</button>
+                </div>
+              </div>
+              <div class="collapse" id="results">
+                <!-- Text input-->
+                <div class="form-group">
+                  <label class="col-md-4 control-label" for="vote_rshares">Reward Shares</label>
+                  <div class="col-md-2">
+                    <input class="form-control input-md" id="vote_rshares" type="text">
+                  </div>
+                </div>
+                <div class="collapse" id="postresults">
+                  <!-- Text input-->
+                  <div class="form-group">
+                    <label class="col-md-4 control-label" for="vote_weight">Vote Weight</label>
+                    <div class="col-md-2">
+                      <input class="form-control input-md" id="vote_weight" type="text">
                     </div>
-                    <div id="usernotfoundalert" class="alert alert-danger collapse">
-                        User not found!
+                  </div><!-- Text input-->
+                  <div class="form-group">
+                    <label class="col-md-4 control-label" for="vote_percent">Vote Percent</label>
+                    <div class="col-md-2">
+                      <input class="form-control input-md" id="vote_percent" type="text">
                     </div>
-                    <div id="postnotfoundalert" class="alert alert-danger collapse">
-                        Post not found!
+                  </div>
+                  <div class="collapse" id="earlypost">
+                    <div class="alert alert-warning" id="earlypostalert">
+                      <span class="help-block">This post is not 30 minutes old yet. You are taking a penalty of <span id="penalty_value">X</span> on the voting weight.</span>
                     </div>
-
-                    <!-- Text input-->
                     <div class="form-group">
-                        <label class="col-md-4 control-label" for="username">Username</label>
-                        <div class="col-md-2">
-                            <input id="username" type="text" placeholder="burnin" class="form-control input-md">
-
-                        </div>
-                    </div>
-
-                    <!-- Text input-->
+                      <label class="col-md-4 control-label" for="adj_weight">Adjusted Weight</label>
+                      <div class="col-md-2">
+                        <input class="form-control input-md" id="adj_weight" type="text">
+                      </div>
+                    </div><!-- Text input-->
                     <div class="form-group">
-                        <label class="col-md-4 control-label" for="posturl">Post URL</label>
-                        <div class="col-md-4">
-                            <input id="posturl" type="text" placeholder="https://steemit.com/fiction/@burnin/steemit-s-free-online-sci-fi-compendium-vol-1" class="form-control input-md">
-
-                        </div>
+                      <label class="col-md-4 control-label" for="adj_vote_percent">Ajusted Vote Percent</label>
+                      <div class="col-md-2">
+                        <input class="form-control input-md" id="adj_vote_percent" type="text">
+                      </div>
                     </div>
-
-                    <!-- Button -->
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="singlebutton"></label>
-                        <div class="col-md-1">
-                            <button id="calculatebutton" class="btn btn-primary">Calculate</button>
-                        </div>
-                    </div>
-
-
-                    <div id="results" class="collapse">
-                        <!-- Text input-->
-                        <div class="form-group">
-                            <label class="col-md-4 control-label" for="vote_rshares">Reward Shares</label>
-                            <div class="col-md-2">
-                                <input id="vote_rshares" type="text" class="form-control input-md">
-
-                            </div>
-                        </div>
-
-                        <div id="postresults" class="collapse">
-                            <!-- Text input-->
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="vote_weight">Vote Weight</label>
-                                <div class="col-md-2">
-                                    <input id="vote_weight" type="text" class="form-control input-md">
-
-                                </div>
-                            </div>
-
-                            <!-- Text input-->
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="vote_percent">Vote Percent</label>
-                                <div class="col-md-2">
-                                    <input id="vote_percent" type="text" class="form-control input-md">
-
-                                </div>
-                            </div>
-                            <div id="earlypost" class="collapse">
-                                <div id="earlypostalert" class="alert alert-warning ">
-                                    <span class="help-block">This post is not 30 minutes old yet. You are taking a penalty of <span id="penalty_value">X</span> on the voting weight.</span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="col-md-4 control-label" for="adj_weight">Adjusted Weight</label>
-                                    <div class="col-md-2">
-                                        <input id="adj_weight" type="text" class="form-control input-md">
-
-                                    </div>
-                                </div>
-                                <!-- Text input-->
-                                <div class="form-group">
-                                    <label class="col-md-4 control-label" for="adj_vote_percent">Ajusted Vote Percent</label>
-                                    <div class="col-md-2">
-                                        <input id="adj_vote_percent" type="text" class="form-control input-md">
-
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="rewardplot" style="width:100%;height:100%"></div>
-                        </div>
-                        <div id="plots" style="width:100%;height:100%"></div>
-                        <div id="plots2" style="width:100%;height:100%"></div>
-                    </div>
-                </fieldset>
-            </form>
+                  </div>
+                  <div id="rewardplot" style="width:100%;height:100%"></div>
+                </div>
+                <div id="plots" style="width:100%;height:100%"></div>
+                <div id="plots2" style="width:100%;height:100%"></div>
+              </div>
+            </fieldset>
+          </form>
         </div>
-
+      </div>
+    </div>
 </body>
 
 </html>
