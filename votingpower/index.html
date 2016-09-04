@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Voting Power Analyzer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
+    <script type="text/javascript" src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.14.1/moment.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/livestamp/1.1.2/livestamp.min.js"></script>
+
+    <link rel="stylesheet" href="/css/animate.min.css">
+    <style media="screen" type="text/css">
+
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript" src="/js/steem.min.js"></script>
+    <script type="text/javascript" src="/js/steemcalculator.js"></script>
+    <script type="text/javascript" src="/js/steemplots.js"></script>
+
+    <script type="text/javascript">
+    function hideResults() {
+      $("#requiredfieldsalert").hide();
+      $("#usernotfoundalert").hide();
+      $('results').hide();
+    }
+
+    function getInput() {
+      var username = $("#username").val();
+      if (username.startsWith("@")) {
+        username = username.substring(1);
+      }
+      return username;
+    }
+
+    function calculate() {
+        hideResults();
+        var username = getInput();
+        if (!username)
+            return;
+        getCalculator(function(calculator) {
+            calculator.loadAccountVotes(username, function(votes) {
+                getSteemPlotter(calculator, function(plotter) {
+                      plotter.plotVotingPowerUsage(username, votes, 'plots', 'plots2');
+                      $('#results').show();
+                    });
+            }, function() {
+                $("#usernotfoundalert").show();
+                return;
+            });
+        });
+    }
+    </script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-82996957-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+
+    <div class="container">
+      <div class="page-header col-lg-10">
+        <ul class="nav nav-tabs">
+          <li role="presentation">
+            <a href="/">Steemit Vote Weight Calculator</a>
+          </li>
+          <li role="presentation">
+            <a href="/promoted">Latest Steemit Promoted Posts</a>
+          </li>
+          <li role="presentation" class="active">
+            <a href="/promoted">Voting Power Analyzer</a>
+          </li>
+          <!-- a class="btn btn-primary pull-right" href="https://steemit.com/steemit/@burnin/steemit-vote-weight-calculator-0-2-new-graphs-and-analysis" role="button">v0.2 - read the update</a -->
+        </ul>
+
+      </div>
+      <div class="row">
+        <div class="col-lg-10">
+          <form action="javascript:calculate();" class="form-horizontal" id="votecalculation" name="votecalculation">
+            <fieldset>
+              <div class="alert alert-danger collapse" id="requiredfieldsalert">
+                Username is required!
+              </div>
+              <div class="alert alert-danger collapse" id="usernotfoundalert">
+                User not found!
+              </div>
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="username">Username</label>
+                <div class="col-md-2">
+                  <input class="form-control input-md" id="username" placeholder="burnin" type="text">
+                </div>
+              </div><!-- Text input-->
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="singlebutton"></label>
+                <div class="col-md-1">
+                  <button class="btn btn-primary" id="calculatebutton">Calculate</button>
+                </div>
+              </div>
+              <div id="results" class="collapse">
+                <p>@<span id="user_name">username</span> cast <span id="num_votes">num_votes</span> votes spending <span id="used_power">used_power</span>VP and wasting <span id="spillover">spillover</span>VP due to missed regeneration.</p>
+                <p>Under new rules, it would have spent <span id="new_used_power">new_used_power</span>VP and wasted <span id="new_spillover">newspillover</span>VP due to missed regeneration.</p>
+              </div>
+              <div id="plots" style="width:100%;height:100%"></div>
+              <div id="plots2" style="width:100%;height:100%"></div>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div>
+
+</body>
+
+</html>

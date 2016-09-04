@@ -128,5 +128,106 @@ function getSteemPlotter(calculator, callback) {
         Plotly.newPlot(plottarget, [trace1, trace2, trace3], layout);
     }
 
+    plotter.plotVotingPowerUsage = function(username, votes, plottarget, plottarget2) {
+      var voting_power = 10000;
+      var new_voting_power = 10000;
+      var x = [];
+      var y = [];
+      var new_y = [];
+      var text = [];
+
+      var power_y = [];
+      var new_power_y = [];
+
+      var total_power_spent = 0;
+      var new_total_power_spent = 0;
+      var total_spillover = 0;
+      var new_total_spillover = 0;
+
+      var last_vote;
+      for (var i = 0; i < votes.length; i++) {
+        vote = votes[i];
+        if (last_vote) {
+          total_spillover += calculator.regenerateSpillover(voting_power, last_vote, vote.time);
+          new_total_spillover += calculator.regenerateSpillover(new_voting_power, last_vote, vote.time);
+          voting_power = calculator.regenerateVotingPower(voting_power, last_vote, vote.time);
+          new_voting_power = calculator.regenerateVotingPower(new_voting_power, last_vote, vote.time);
+        }
+        var used_power = calculator.calculateUsedPower(voting_power, vote.percent);
+        var new_used_power = calculator.calculateNewUsedPower(new_voting_power, vote.percent);
+
+        x.push(i);
+        y.push((voting_power / 100).toFixed(2));
+        new_y.push((new_voting_power / 100).toFixed(2));
+
+        power_y.push(used_power);
+        new_power_y.push(new_used_power);
+
+        text.push(vote.authorperm);
+        total_power_spent += used_power;
+        new_total_power_spent += new_used_power;
+        voting_power -= used_power;
+        new_voting_power -= new_used_power;
+        last_vote = vote.time;
+      }
+      var trace = {
+          x: x,
+          y: y,
+          text: text,
+          mode: 'lines+markers',
+          name: 'Voting Power'
+      };
+      var trace2 = {
+          x: x,
+          y: new_y,
+          mode: 'lines+markers',
+          name: 'New Voting Power'
+      };
+
+      var layout = {
+          title: 'Historical Voting Power fluctuation for @' + username,
+          xaxis: {
+              title: 'Vote #'
+          },
+          yaxis: {
+              title: 'Voting Power',
+              ticksuffix: '%'
+          }
+      };
+      Plotly.newPlot(plottarget, [trace, trace2], layout);
+
+      var trace = {
+          x: x,
+          y: power_y,
+          text: text,
+          mode: 'lines+markers',
+          name: 'Spent Power'
+      };
+      var trace2 = {
+          x: x,
+          y: new_power_y,
+          mode: 'lines+markers',
+          name: 'New Spent Power'
+      };
+
+      var layout = {
+          title: 'Spent power per vote for @' + username,
+          xaxis: {
+              title: 'Vote #'
+          },
+          yaxis: {
+              title: 'Vote Power',
+          }
+      };
+      Plotly.newPlot(plottarget2, [trace, trace2], layout);
+      $('#user_name').text(username);
+      $('#num_votes').text(votes.length);
+      $('#used_power').text(total_power_spent.toFixed(0));
+      $('#spillover').text(total_spillover.toFixed(0));
+      $('#new_used_power').text(new_total_power_spent.toFixed(0));
+      $('#new_spillover').text(new_total_spillover.toFixed(0));
+
+    }
+
     return callback(plotter);
 }

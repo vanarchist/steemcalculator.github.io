@@ -10,10 +10,18 @@ function getCalculator(callback) {
       return Number((((SP * 1000) / this.total_vest_steem) * this.total_vests).toFixed(3))
     }
 
-    calculator.calculateVoteRewardShares = function(voting_power, voting_percent, vesting_shares) {
+    calculator.calculateUsedPower = function(voting_power, voting_percent) {
       var used_power = (voting_power * voting_percent) / 10000;
-      used_power = (used_power / 200) + 1;
-      return (used_power * vesting_shares) / 10000;
+      return Math.abs((used_power / 200) + 1);
+    }
+
+    calculator.calculateNewUsedPower = function(voting_power, voting_percent) {
+      var used_power = (voting_power * voting_percent) / 10000;
+      return Math.abs((used_power + 25 - 1) / 25);
+    }
+
+    calculator.calculateVoteRewardShares = function(voting_power, voting_percent, vesting_shares) {
+      return (this.calculateUsedPower(voting_power, voting_percent) * vesting_shares) / 10000;
     }
 
     calculator.calculateWeight = function(shares) {
@@ -65,6 +73,20 @@ function getCalculator(callback) {
 
     calculator.calculateAjustedPenaltyWeight = function(vote_weight, penalty_value) {
         return vote_weight * penalty_value;
+    }
+
+    calculator.regenerateVotingPower = function(voting_power, last_vote_time, current_time) {
+      const vote_regeneration_seconds = 5*60*60*24;
+      var elapsed_seconds = (new Date(current_time) - new Date(last_vote_time)) / 1000;
+      var regenerated_power = (10000 * elapsed_seconds) / vote_regeneration_seconds;
+      return Math.min(voting_power + regenerated_power, 10000);
+    }
+
+    calculator.regenerateSpillover = function(voting_power, last_vote_time, current_time) {
+      const vote_regeneration_seconds = 5*60*60*24;
+      var elapsed_seconds = (new Date(current_time) - new Date(last_vote_time)) / 1000;
+      var regenerated_power = (10000 * elapsed_seconds) / vote_regeneration_seconds;
+      return Math.max(0, (voting_power + regenerated_power) - 10000);
     }
 
     calculator.toSBD = function(steem) {
@@ -168,6 +190,22 @@ function getCalculator(callback) {
             }
           }
           callback(transfers);
+      });
+    }
+
+    calculator.loadAccountVotes = function(username, callback) {
+      steem.send('call', [0, 'get_account_votes', [username]], function(response) {
+        var votes = [];
+        for (var i = 0; i < response.length; i++) {
+          var r = response[i];
+          var v = {};
+          v.time = r.time;
+          v.percent = r.percent;
+          v.authorperm = r.authorperm;
+          votes.push(v);
+        }
+        votes.sort(function(a,b) {return (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0);} );
+        callback(votes);
       });
     }
 
