@@ -160,8 +160,8 @@ function getSteemPlotter(calculator, callback) {
         y.push((voting_power / 100).toFixed(2));
         new_y.push((new_voting_power / 100).toFixed(2));
 
-        power_y.push(used_power);
-        new_power_y.push(new_used_power);
+        power_y.push(used_power.toFixed(2));
+        new_power_y.push(new_used_power.toFixed(2));
 
         text.push(vote.authorperm);
         total_power_spent += used_power;
