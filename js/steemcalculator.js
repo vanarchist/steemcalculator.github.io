@@ -210,7 +210,7 @@ function getCalculator(callback) {
     }
 
 
-    var server = 'wss://steemit.com/wspa';
+    var server = 'wss://steemd.steemitdev.com';
     var ws = new WebSocketWrapper(server);
     var steem;
     ws.connect().then(function(response) {
